@@ -1,7 +1,9 @@
 from typing import Optional
 
+from django.core.exceptions import ValidationError
 from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
+from mysite.settings import MAX_PLAYERS_AMOUNT
 from pydantic import BaseModel
 
 from callback.models import Game, Player
@@ -153,11 +155,13 @@ def create_new_player(player: PlayerItem, Authorize: AuthJWT = Depends()):
         new_player.email = player.email
         new_player.full_clean()
         new_player.save()
-    except Exception as e:
-        if ("value has at most") in e.message_dict['name'][0]:
-            return get_500_response(e.message_dict)
-
+    except ValidationError as e:
+        for val in e.message_dict.values():
+            if val[0].startswith("Ensure this value has at most"):
+                return get_500_response(e.message_dict)
         return get_400_response(e.message_dict)
+    except Exception as e:
+        return get_500_response(e)
 
     return JSONResponse(content={"status": "success", "id": new_player.id, "success": True})
 
@@ -184,16 +188,21 @@ def add_player_to_game(game_id: int, player_id: int, Authorize: AuthJWT = Depend
     Authorize.jwt_required()
 
     try:
-        player = Player.objects.get(id=player_id)
         game = Game.objects.get(id=game_id)
-        player_games = player.player_games.all()
-
-        if game in player_games:
-            message = f"Player with id {player_id} already in game with id {game_id}"
-            return get_400_response(message)
-
-        game.players.add(player)
-
-        return JSONResponse(content={"status": "success", "id": game_id, "success": True})
-    except Exception as e:
+        player = Player.objects.get(id=player_id)
+    except (Game.DoesNotExist, Player.DoesNotExist) as e:
         return get_400_response(str(e))
+
+    game_players = game.players.all()
+
+    if game_players.count() == MAX_PLAYERS_AMOUNT:
+        return get_400_response(f"The game cannot have more than {MAX_PLAYERS_AMOUNT} players")
+
+    elif player not in game_players:
+        game.players.add(player)
+        return JSONResponse(content={"status": "success", "id": game_id, "success": True})
+
+    return get_400_response(f"Player with id {player_id} already in game with id {game_id}")
+
+    
+

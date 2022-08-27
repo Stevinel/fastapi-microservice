@@ -1,6 +1,4 @@
-from django.core.exceptions import ValidationError
 from django.db import models
-from mysite.settings import MAX_PLAYERS_AMOUNT
 
 from callback.utils import name_regex
 
@@ -28,10 +26,6 @@ class Player(BaseModel, models.Model):
 class Game(BaseModel, models.Model):
     name = models.CharField(max_length=254, default="", unique=True)
     players = models.ManyToManyField(Player, blank=True, related_name="player_games")
-
-    def clean(self):
-        if self.id and self.players.count() >= MAX_PLAYERS_AMOUNT:
-            raise ValidationError(f"The game cannot have more than {MAX_PLAYERS_AMOUNT} players")
 
     def __str__(self):
         return self.name
