@@ -156,9 +156,6 @@ def create_new_player(player: PlayerItem, Authorize: AuthJWT = Depends()):
         new_player.full_clean()
         new_player.save()
     except ValidationError as e:
-        for val in e.message_dict.values():
-            if val[0].startswith("Ensure this value has at most"):
-                return get_500_response(e.message_dict)
         return get_400_response(e.message_dict)
     except Exception as e:
         return get_500_response(e)
