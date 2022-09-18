@@ -1,10 +1,8 @@
-from typing import Optional
-
 from django.core.exceptions import ValidationError
+from .schemas import *
 from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
 from mysite.settings import MAX_PLAYERS_AMOUNT
-from pydantic import BaseModel
 
 from callback.models import Game, Player
 from callback.utils import get_400_response, get_500_response
@@ -20,43 +18,6 @@ app = FastAPI(
     description=description,
     version="0.0.1"
 )
-
-
-class User(BaseModel):
-    username: str
-    password: str
-
-
-class LoginMessage(BaseModel):
-    access_token: str
-
-
-class UserMessage(BaseModel):
-    user: str
-
-
-class StatusMessage(BaseModel):
-    status: str
-    id: Optional[int] = None
-    success: Optional[bool] = None
-
-
-class ErrorMessage(BaseModel):
-    status: str
-    message: str
-
-
-class PlayerItem(BaseModel):
-    name: str
-    email: str
-
-
-class GameItem(BaseModel):
-    name: str
-
-
-class Settings(BaseModel):
-    authjwt_secret_key: str = "secret"
 
 
 # callback to get your configuration
